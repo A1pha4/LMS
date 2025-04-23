@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>My Cart - Library</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html" class="active">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="cart" class="section">
+      <h2>Your Cart</h2>
+      <div id="cart-content">
+        <!-- Will be filled by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkLogin()) return;
+      document.getElementById('cart').style.display = "block";
+      viewCart();
+    });
+    
+    function viewCart() {
+      const user_id = localStorage.getItem("user_id");
+    
+      if (!user_id) {
+        alert("Please log in first.");
+        return;
+      }
+    
+      fetch(`http://localhost:3000/cart/${user_id}`)
+      .then(response => response.json())
+      .then(data => {
+        let cartHTML = "";
+    
+        if (data.length === 0) {
+          cartHTML += "<p>Your cart is empty.</p>";
+        } else {
+          data.forEach(book => {
+            cartHTML += `
+              <p><strong>${book.title}</strong> - Quantity: ${book.quantity} 
+              <button onclick="removeFromCart(${book.book_id})" style="margin-left: 10px; background-color: red; color: white; border: none; padding: 5px 10px; cursor: pointer;">
+                Drop
+              </button>
+              </p>
+            `;
+          });
+    
+          cartHTML += `<button onclick="bookItems()">Book Now</button>`;
+        }
+    
+        document.getElementById("cart-content").innerHTML = cartHTML;
+      })
+      .catch(error => console.error("Error fetching cart:", error));
+    }
+    
+    function removeFromCart(bookId) {
+      const user_id = localStorage.getItem("user_id");
+    
+      fetch(`http://localhost:3000/cart/remove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id, book_id: bookId })
+      })
+      .then(response => response.text())
+      .then(message => {
+        alert(message);
+        viewCart(); // Refresh the cart after removing an item
+      })
+      .catch(error => console.error("Error removing book from cart:", error));
+    }
+   
+    function bookItems() {
+      const user_id = localStorage.getItem("user_id");
+    
+      fetch("http://localhost:3000/cart/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id })
+      })
+      .then(response => response.text())
+      .then(message => {
+        alert(message);
+        viewCart(); // Refresh cart
+      })
+      .catch(error => console.error("Error booking items:", error));
+    }
+  </script>
+</body>
+</html>

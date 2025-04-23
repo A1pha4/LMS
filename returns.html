@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Return Books - Library</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html" class="active">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="returnBooks" class="section">
+      <h2>Books to Return</h2>
+      <table id="returnTable" border="1" cellpadding="10">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Checked Out</th>
+            <th>Fine (if overdue)</th>
+          </tr>
+        </thead>
+        <tbody id="returnList">
+          <!-- Dynamically filled by JavaScript -->
+        </tbody>
+      </table>
+      <button id="returnBooksButton" onclick="handleReturnBooks()" disabled>Return Selected Books</button>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkLogin()) return;
+      document.getElementById('returnBooks').style.display = "block";
+      showReturnBooks();
+    });
+    
+    function showReturnBooks() {
+  const user_id = localStorage.getItem("user_id");
+
+  if (!user_id) {
+    alert("User ID not found. Please log in.");
+    return;
+  }
+
+  fetch(`http://localhost:3000/bookings/${user_id}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(response => {
+      console.log("API Response:", response);
+      
+      // Extract the books array from the response, handling different response formats
+      let data;
+      if (Array.isArray(response)) {
+        data = response;
+      } else if (typeof response === 'object') {
+        // Try to find an array in the response object
+        data = response.books || response.data || response.bookings || [];
+      } else {
+        data = [];
+      }
+      
+      console.log("Processed books data:", data);
+
+      const returnList = document.getElementById("returnList");
+      const returnButton = document.getElementById("returnBooksButton");
+      returnList.innerHTML = ""; // Clear existing rows
+
+      // Ensure data is an array before filtering
+      const activeBooks = Array.isArray(data) ? data.filter(book => book.status === 'checked_out') : [];
+      console.log("Active books:", activeBooks);
+
+      if (activeBooks.length === 0) {
+        returnList.innerHTML = "<tr><td colspan='5'>No books to return</td></tr>";
+        returnButton.disabled = true; // Disable return button when no books to return
+        return;
+      }
+
+          // Populate the table with active books
+          activeBooks.forEach(book => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+              <td><input type="checkbox" class="book-select" data-book-id="${book.book_id}" data-booking-id="${book.booking_id}" /></td>
+              <td>${book.title}</td>
+              <td>${book.category}</td>
+              <td>${book.booking_date}</td>
+              <td id="fine-${book.booking_id}">Checking for overdue...</td>
+            `;
+            returnList.appendChild(row);
+
+            // Calculate and display fine for overdue books
+            const bookingDate = new Date(book.booking_date);
+            const currentDate = new Date();
+            const timeDifference = currentDate - bookingDate;
+            const daysOverdue = Math.floor(timeDifference / (1000 * 3600 * 24));
+
+            let fine = 0;
+            if (daysOverdue > 0) {
+              fine = daysOverdue * 5;  // Fine per day, $5 per overdue day
+            }
+
+            const fineElement = document.getElementById(`fine-${book.booking_id}`);
+            fineElement.innerHTML = fine > 0 ? `$${fine}` : "No fine";
+          });
+
+          // Enable the return button if any book is selected
+          const checkboxes = document.querySelectorAll(".book-select");
+          checkboxes.forEach(checkbox => {
+            checkbox.addEventListener("change", toggleReturnButton);
+          });
+
+          document.getElementById('returnBooks').style.display = "block";
+        })
+        .catch(error => console.error("Error fetching books:", error));
+    }
+
+    // Function to toggle the return button based on selected books
+    function toggleReturnButton() {
+      const returnButton = document.getElementById("returnBooksButton");
+      const selectedBooks = document.querySelectorAll(".book-select:checked");
+      returnButton.disabled = selectedBooks.length === 0;
+    }
+
+    // Return Selected Books
+    function handleReturnBooks() {
+  const selectedBooks = document.querySelectorAll(".book-select:checked");
+
+  if (selectedBooks.length === 0) {
+    alert("Please select at least one book to return");
+    return;
+  }
+
+  // If only one book is selected, send as a single object
+  if (selectedBooks.length === 1) {
+    const book = selectedBooks[0];
+    const bookingId = book.getAttribute("data-booking-id");
+    const bookId = book.getAttribute("data-book-id");
+    
+    const singleBookData = { booking_id: bookingId, book_id: bookId };
+    
+    console.log("Sending single book return:", singleBookData);
+    
+    fetch("http://localhost:3000/books/return", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(singleBookData)
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        alert(result.message);
+        showReturnBooks(); // Refresh the list after return
+      } else {
+        alert("Error: " + result.message);
+      }
+    })
+    .catch(error => console.error("Error:", error));
+    
+    return;
+  }
+
+  // For multiple books, process them one by one
+  const processNextBook = (index = 0) => {
+    if (index >= selectedBooks.length) {
+      // All books processed
+      alert("All selected books have been processed");
+      showReturnBooks(); // Refresh the list
+      return;
+    }
+    
+    const book = selectedBooks[index];
+    const bookingId = book.getAttribute("data-booking-id");
+    const bookId = book.getAttribute("data-book-id");
+    
+    const bookData = { booking_id: bookingId, book_id: bookId };
+    
+    fetch("http://localhost:3000/books/return", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bookData)
+    })
+    .then(response => response.json())
+    .then(result => {
+      console.log(`Book ${index + 1}/${selectedBooks.length} processed:`, result);
+      // Process next book regardless of success/failure
+      processNextBook(index + 1);
+    })
+    .catch(error => {
+      console.error(`Error processing book ${index + 1}:`, error);
+      // Continue with next book even if there's an error
+      processNextBook(index + 1);
+    });
+  };
+  
+  // Start processing books
+  processNextBook();
+}
+  </script>
+</body>
+</html>

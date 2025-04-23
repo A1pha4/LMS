@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.14.0"
+  },
+  "scripts": {
+    "start": "npm-run-all --parallel backend frontend",
+    "backend": "node signup.js",
+    "frontend": "live-server"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

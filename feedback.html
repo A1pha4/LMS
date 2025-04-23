@@ -1,0 +1,228 @@
+<!-- feedback.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Provide Feedback - Library System</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="feedback" class="section">
+      <h2><i class="fas fa-comment-alt"></i> Provide Feedback</h2>
+      <form id="feedbackForm">
+        <input type="hidden" id="feedback-user-id">
+        
+        <div class="user-info">
+          <p><strong>User:</strong> <span id="feedback-user-name"></span></p>
+          <p><strong>Email:</strong> <span id="feedback-user-email"></span></p>
+        </div>
+        
+        <div id="feedback-error" class="error-message" style="display:none;"></div>
+        
+        <div class="form-group">
+          <label for="feedback-type">Feedback Type</label>
+          <select id="feedback-type" required>
+            <option value="" disabled selected>Select type</option>
+            <option value="general">General Feedback</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="bug">Bug Report</option>
+            <option value="complaint">Complaint</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="feedback-message">Your Feedback</label>
+          <textarea id="feedback-message" rows="5" required 
+                   placeholder="Please share your thoughts..."></textarea>
+        </div>
+        
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-paper-plane"></i> Submit Feedback
+        </button>
+      </form>
+      
+      <div id="feedback-success" class="success-message" style="display:none;">
+        <i class="fas fa-check-circle"></i> Thank you for your feedback!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkLogin()) return;
+      document.getElementById('feedback').style.display = "block";
+    });
+
+    // Load user data into feedback form
+    async function loadFeedbackForm() {
+      try {
+        // Get user ID and token with fallbacks
+        const userId = localStorage.getItem('user_id') || 
+                      localStorage.getItem('userId');
+        const token = localStorage.getItem('token') || 
+                     localStorage.getItem('authToken');
+
+        if (!userId || !token) {
+          throw new Error('Missing authentication data');
+        }
+
+        // Show loading state
+        document.getElementById('feedback-user-name').textContent = 'Loading...';
+        document.getElementById('feedback-user-email').textContent = 'Loading...';
+
+        // Make API request
+        const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // Handle response
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('User not found');
+          } else if (response.status === 401) {
+            throw new Error('Session expired');
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('feedback-user-id').value = data.user.id;
+          document.getElementById('feedback-user-name').textContent = data.user.name;
+          document.getElementById('feedback-user-email').textContent = data.user.email;
+        } else {
+          throw new Error(data.message || 'Failed to load user data');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        
+        // Show user-friendly error
+        const errorElement = document.getElementById('feedback-error');
+        errorElement.textContent = `Error: ${error.message}`;
+        errorElement.style.display = 'block';
+        
+        document.getElementById('feedback-user-name').textContent = 'Not available';
+        document.getElementById('feedback-user-email').textContent = 'Not available';
+        
+        if (error.message.includes('Session expired') || 
+            error.message.includes('Missing authentication')) {
+          setTimeout(() => {
+            window.location.href = '/login?return=feedback';
+          }, 2000);
+        }
+      }
+    }
+
+    // Submit feedback function
+    async function submitFeedback(event) {
+      event.preventDefault();
+      const form = event.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const successElement = document.getElementById('feedback-success');
+      const errorElement = document.getElementById('feedback-error');
+      
+      // Early validation
+      if (!successElement || !errorElement) {
+        console.error('Missing required DOM elements');
+        return;
+      }
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        errorElement.style.display = 'none'; 
+
+        // Get the name and email from the displayed values
+        const name = document.getElementById('feedback-user-name').textContent;
+        const email = document.getElementById('feedback-user-email').textContent;
+        
+        // Check if valid data is available
+        if (name === 'Not available' || email === 'Not available' || 
+            name === 'Loading...' || email === 'Loading...') {
+          throw new Error('User information not properly loaded');
+        }
+
+        const formData = {
+          name: name,
+          email: email,
+          type: document.getElementById('feedback-type').value,
+          message: document.getElementById('feedback-message').value
+        };
+
+        console.log('Submitting feedback data:', formData); // Debug logging
+
+        const response = await fetch('http://localhost:3000/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('authToken') || ''}`
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(responseData.error || 'Request failed');
+        }
+
+        form.style.display = 'none';
+        successElement.style.display = 'block';
+
+        // Reset and show form after 3 seconds
+        setTimeout(() => {
+          form.reset();
+          form.style.display = 'block';
+          successElement.style.display = 'none';
+        }, 3000);
+
+      } catch (error) {
+        console.error('Error submitting feedback:', error);
+        errorElement.textContent = error.message;
+        errorElement.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
+      }
+  }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadFeedbackForm();
+      document.getElementById('feedbackForm').addEventListener('submit', submitFeedback);
+    });
+  </script>
+</body>
+</html>

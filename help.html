@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Help and Support</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+
+    <div id="help-support" class="section"> 
+      <div class="help-support-content"> 
+        <h1>Library Help Center</h1>
+        
+        <div id="faq-loading" class="loading">Loading FAQs...</div>
+        <div id="faq-error" class="error" style="display: none;"></div>
+        
+        <div id="faq-content" style="display: none;">
+            <div class="faq-categories" id="faq-categories"></div>
+            
+            <div class="faq-list">
+                <h2 id="faq-category-title"></h2>
+                <div id="faq-items-container"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!checkLogin()) return;
+      document.getElementById('help-support').style.display = "block";
+      // More specific element selectors
+      const loadingEl = document.getElementById('faq-loading');
+      const errorEl = document.getElementById('faq-error');
+      const faqContent = document.getElementById('faq-content');
+      const categoriesEl = document.getElementById('faq-categories');
+      const categoryTitle = document.getElementById('faq-category-title');
+      const faqItemsContainer = document.getElementById('faq-items-container');
+            
+      // Check if elements exist before proceeding
+      if (!loadingEl || !errorEl || !faqContent || !categoriesEl || !categoryTitle || !faqItemsContainer) {
+        console.error('One or more required elements are missing from the DOM');
+        return;
+      }
+            
+      let faqsData = {};
+      let activeCategory = null;
+            
+      function showError(message) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.textContent = message;
+        faqContent.style.display = 'none';
+      }
+            
+      // Fetch FAQs from your API
+      fetch('http://localhost:3000/api/faqs')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            faqsData = data.data;
+            if (Object.keys(faqsData).length === 0) {
+              showError('No FAQs available');
+            } else {
+              renderCategories();
+              loadingEl.style.display = 'none';
+              faqContent.style.display = 'block';
+            }
+          } else {
+            throw new Error(data.message || 'Failed to load FAQs');
+          }
+        })
+        .catch(error => {
+          showError(`Error: ${error.message}`);
+          console.error('Fetch error:', error);
+        });
+            
+      function renderCategories() {
+        try {
+          // Clear previous categories safely
+          if (categoriesEl) {
+            categoriesEl.innerHTML = '';
+          } else {
+            throw new Error('Categories element not found');
+          }
+                    
+          // Get all categories
+          const categories = Object.keys(faqsData);
+                    
+          // Create buttons for each category
+          categories.forEach(category => {
+            const button = document.createElement('button');
+            button.className = 'category-btn';
+            button.textContent = category;
+            button.addEventListener('click', () => {
+              setActiveCategory(category);
+              document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === category);
+              });
+            });
+            categoriesEl.appendChild(button);
+          });
+                    
+          // Set the first category as active by default
+          if (categories.length > 0) {
+            setActiveCategory(categories[0]);
+            categoriesEl.firstElementChild?.classList.add('active');
+          }
+        } catch (error) {
+          showError('Error displaying categories');
+          console.error('Render categories error:', error);
+        }
+      }
+            
+      function setActiveCategory(category) {
+        try {
+          activeCategory = category;
+          if (categoryTitle) {
+            categoryTitle.textContent = category;
+          }
+          renderFaqItems();
+        } catch (error) {
+          console.error('Set active category error:', error);
+        }
+      }
+            
+      function renderFaqItems() {
+        try {
+          if (!faqItemsContainer) return;
+                    
+          faqItemsContainer.innerHTML = '';
+                    
+          if (!activeCategory || !faqsData[activeCategory]) return;
+                    
+          faqsData[activeCategory].forEach(faq => {
+            const faqItem = document.createElement('div');
+            faqItem.className = 'faq-item';
+                        
+            const question = document.createElement('h3');
+            question.textContent = faq.question;
+                        
+            const answer = document.createElement('p');
+            answer.textContent = faq.answer;
+                        
+            faqItem.appendChild(question);
+            faqItem.appendChild(answer);
+            faqItemsContainer.appendChild(faqItem);
+          });
+        } catch (error) {
+          console.error('Render FAQ items error:', error);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

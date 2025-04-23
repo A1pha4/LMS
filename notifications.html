@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Notifications - Library</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+  <style>
+    .notification-item {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      position: relative;
+    }
+    
+    .notification-high {
+      border-left: 5px solid #f44336;
+    }
+    
+    .notification-medium {
+      border-left: 5px solid #ff9800;
+    }
+    
+    .notification-low {
+      border-left: 5px solid #2196F3;
+    }
+    
+    .notification-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .notification-date {
+      color: #777;
+      font-size: 0.85em;
+    }
+    
+    .notification-action {
+      margin-top: 10px;
+    }
+    
+    .notification-action button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .notification-action button:hover {
+      background-color: #45a049;
+    }
+    
+    .notification-empty {
+      color: #777;
+      text-align: center;
+      padding: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html" class="active">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="notifications" class="section">
+      <h2>Notifications</h2>
+      <div id="notifications-content">
+        <div class="notification-empty">Loading notifications...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('notifications').style.display = "block";
+      if (!checkLogin()) return;
+      loadNotifications();
+    });
+    
+    async function loadNotifications() {
+      try {
+        const userId = localStorage.getItem("user_id");
+        if (!userId) {
+          showNotificationError("User ID not found. Please log in again.");
+          return;
+        }
+        
+        const response = await fetch(`api/notifications/${userId}`);
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || "Failed to load notifications");
+        }
+        
+        displayNotifications(data.notifications);
+      } catch (error) {
+        console.error("Error loading notifications:", error);
+        showNotificationError("Failed to load notifications. Please try again later.");
+      }
+    }
+    
+    function displayNotifications(notifications) {
+      const container = document.getElementById('notifications-content');
+      
+      // Clear existing content
+      container.innerHTML = '';
+      
+      if (notifications.length === 0) {
+        container.innerHTML = '<div class="notification-empty">You have no new notifications</div>';
+        return;
+      }
+      
+      // Add each notification to the container
+      notifications.forEach(notification => {
+        const notificationElement = document.createElement('div');
+        notificationElement.className = `notification-item notification-${notification.severity}`;
+        notificationElement.id = `notification-${notification.id}`;
+        
+        let formattedDate = formatDate(notification.return_date);
+        let actionButton = '';
+        
+        if (notification.type === 'overdue') {
+          formattedDate += ` (${notification.days_overdue} days overdue)`;
+          actionButton = `
+            <div class="notification-action">
+              <button onclick="redirectToReturn('${notification.booking_id}')">Return Book</button>
+            </div>
+          `;
+        } else {
+          formattedDate += ` (${notification.days_remaining} days remaining)`;
+          actionButton = `
+            <div class="notification-action">
+              <button onclick="redirectToReturn('${notification.booking_id}')">Return Early</button>
+            </div>
+          `;
+        }
+        
+        notificationElement.innerHTML = `
+          <div class="notification-title">${notification.title}</div>
+          <div class="notification-message">${notification.message}</div>
+          <div class="notification-date">Due date: ${formattedDate}</div>
+          ${actionButton}
+        `;
+        
+        container.appendChild(notificationElement);
+      });
+    }
+    
+    function showNotificationError(message) {
+      const container = document.getElementById('notifications-content');
+      container.innerHTML = `<div class="notification-empty">${message}</div>`;
+    }
+    
+    function redirectToReturn(bookingId) {
+      // Store the booking ID to be pre-selected on the returns page
+      localStorage.setItem('selected_booking_id', bookingId);
+      window.location.href = 'returns.html';
+    }
+    
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  </script>
+</body>
+</html>

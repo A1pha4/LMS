@@ -1,0 +1,217 @@
+<!-- reserve-resources.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Reserve Resources - Library System</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="reserve-resources" class="section">
+      <h2>Reserve Library Resources</h2>
+      <div class="resource-selection">
+        <select class="resources" id="resources">
+          <option value="" disabled selected>Choose a resource to reserve</option>
+          <option value="study-rooms">Study rooms</option>
+          <option value="computers">Computers</option>
+          <option value="tables">Tables</option>
+        </select>
+      </div>
+      
+      <div class="reservation-details" id="reservation-details" style="display: none;">
+        <h3>Reservation Details</h3>
+        <form id="reservation-form">
+          <div class="form-group">
+            <label for="reservation-date">Date:</label>
+            <input type="date" id="reservation-date" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="reservation-time">Time:</label>
+            <select id="reservation-time" required>
+              <option value="" disabled selected>Select time slot</option>
+              <option value="9:00-10:00">9:00 AM - 10:00 AM</option>
+              <option value="10:00-11:00">10:00 AM - 11:00 AM</option>
+              <option value="11:00-12:00">11:00 AM - 12:00 PM</option>
+              <option value="12:00-13:00">12:00 PM - 1:00 PM</option>
+              <option value="13:00-14:00">1:00 PM - 2:00 PM</option>
+              <option value="14:00-15:00">2:00 PM - 3:00 PM</option>
+              <option value="15:00-16:00">3:00 PM - 4:00 PM</option>
+              <option value="16:00-17:00">4:00 PM - 5:00 PM</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="reservation-duration">Duration (hours):</label>
+            <select id="reservation-duration" required>
+              <option value="1">1 hour</option>
+              <option value="2">2 hours</option>
+              <option value="3">3 hours</option>
+              <option value="4">4 hours</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="resource-specific-options">
+            <!-- This will be populated based on the resource selected -->
+          </div>
+          
+          <button type="submit" class="reserve-button">Reserve Now</button>
+        </form>
+      </div>
+      
+      <div class="reservation-confirmation" id="reservation-confirmation" style="display: none;">
+        <h3>Reservation Confirmed!</h3>
+        <div id="confirmation-details"></div>
+        <button onclick="location.reload()">Make Another Reservation</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('reserve-resources').style.display = "block";
+      const resourceSelect = document.getElementById('resources');
+      const reservationDetails = document.getElementById('reservation-details');
+      const resourceSpecificOptions = document.getElementById('resource-specific-options');
+      const reservationForm = document.getElementById('reservation-form');
+      const reservationConfirmation = document.getElementById('reservation-confirmation');
+      const confirmationDetails = document.getElementById('confirmation-details');
+      
+      // Set minimum date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('reservation-date').min = today;
+      
+      // Show reservation details when a resource is selected
+      resourceSelect.addEventListener('change', function() {
+        reservationDetails.style.display = 'block';
+        
+        // Clear previous options
+        resourceSpecificOptions.innerHTML = '';
+        
+        // Add resource-specific options
+        const selectedResource = this.value;
+        
+        if (selectedResource === 'study-rooms') {
+          resourceSpecificOptions.innerHTML = `
+            <label for="room-size">Room Size:</label>
+            <select id="room-size" required>
+              <option value="small">Small (1-2 people)</option>
+              <option value="medium">Medium (3-4 people)</option>
+              <option value="large">Large (5-8 people)</option>
+            </select>
+          `;
+        } else if (selectedResource === 'computers') {
+          resourceSpecificOptions.innerHTML = `
+            <label for="computer-type">Computer Type:</label>
+            <select id="computer-type" required>
+              <option value="windows">Windows PC</option>
+              <option value="mac">Mac</option>
+              <option value="linux">Linux</option>
+            </select>
+          `;
+        } else if (selectedResource === 'tables') {
+          resourceSpecificOptions.innerHTML = `
+            <label for="table-location">Preferred Location:</label>
+            <select id="table-location" required>
+              <option value="quiet">Quiet Zone</option>
+              <option value="group">Group Study Area</option>
+              <option value="window">Near Window</option>
+            </select>
+          `;
+        }
+      });
+      
+      // Handle form submission
+      reservationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // In a real application, you would send this data to your server
+        const userId = localStorage.getItem('user_id');
+        const resourceType = resourceSelect.value;
+        const date = document.getElementById('reservation-date').value;
+        const timeSlot = document.getElementById('reservation-time').value;
+        const duration = document.getElementById('reservation-duration').value;
+        
+        // Mock successful reservation
+        reservationDetails.style.display = 'none';
+        reservationConfirmation.style.display = 'block';
+        
+        confirmationDetails.innerHTML = `
+          <p><strong>Resource:</strong> ${resourceType.replace('-', ' ').charAt(0).toUpperCase() + resourceType.replace('-', ' ').slice(1)}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time Slot:</strong> ${timeSlot}</p>
+          <p><strong>Duration:</strong> ${duration} hour(s)</p>
+          <p><strong>Reservation ID:</strong> RES-${Math.floor(Math.random() * 10000)}</p>
+        `;
+        
+        // In a production environment, you would send this data to the server:
+        /*
+        fetch('http://localhost:3000/reservations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            resource_type: resourceType,
+            date: date,
+            time_slot: timeSlot,
+            duration: duration,
+            // Add any resource-specific options
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            reservationDetails.style.display = 'none';
+            reservationConfirmation.style.display = 'block';
+            confirmationDetails.innerHTML = `
+              <p><strong>Resource:</strong> ${data.reservation.resource_type}</p>
+              <p><strong>Date:</strong> ${data.reservation.date}</p>
+              <p><strong>Time:</strong> ${data.reservation.time_slot}</p>
+              <p><strong>Duration:</strong> ${data.reservation.duration} hour(s)</p>
+              <p><strong>Reservation ID:</strong> ${data.reservation.id}</p>
+            `;
+          } else {
+            alert('Error: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to make reservation');
+        });
+        */
+      });
+    });
+  </script>
+</body>
+</html>

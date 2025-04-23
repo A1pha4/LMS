@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>My Profile - Library</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="main.js"></script>
+  <script src="navigation.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html" class="active">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="returns.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reservations.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="profile" class="section">
+      <h2>My Profile</h2>
+      <p><strong>Name:</strong> <span id="profileName"></span></p>
+      <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+      <p><strong>Contact:</strong> <span id="profileContact"></span></p>
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      loadProfile();
+    });
+    
+    function loadProfile() {  
+      const userEmail = localStorage.getItem("userEmail");
+      
+      if (!userEmail) {
+        alert("User not logged in!");
+        window.location.href = "library.html";
+        return;
+      }
+
+      fetch(`http://localhost:3000/profile/${userEmail}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("profileName").textContent = data.full_name;
+          document.getElementById("profileEmail").textContent = data.email;
+          document.getElementById("profileContact").textContent = data.contact;
+          
+          document.getElementById('profile').style.display = "block";
+        })
+        .catch(error => console.error("Error fetching profile:", error));
+    }
+  </script>
+</body>
+</html>

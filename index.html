@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Library Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="main.js"></script>
+</head>
+<body>
+  <div class="leftbar">
+    <div class="dashboard">
+      <h2>USER DASHBOARD</h2>
+    </div>
+    <a href="profile.html">My Profile</a>
+    <a href="borrow.html">Borrow Books</a>
+    <a href="cart.html">My Cart</a>
+    <a href="payments.html">Make Payments</a>    
+    <a href="notifications.html">Notifications</a>
+    <a href="return.html">Return Books</a>
+    <a href="history.html">Booking History</a>
+    <a href="reserve.html">Reserve Resources</a>   
+    <a href="feedback.html">Provide Feedback</a>
+    <a href="help.html">Help and Support</a>
+    <a href="settings.html">Settings</a>
+  </div>
+  
+  <div class="mainbody">
+    <div class="navbar">
+      <button class="logout-btn" onclick="redirectToLogin()" type="button"><span></span>LOG OUT</button>
+    </div>
+    
+    <div id="firstsection" class="section">
+      <h2>Welcome to the User Dashboard</h2>
+      <p>Choose an action from the list on the left</p>  
+    </div>
+  </div>
+
+  <script>
+    function redirectToLogin() {
+      window.location.href = "library.html";
+    }
+    
+    // Display the welcome section by default
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('firstsection').style.display = "block";
+    });
+  </script>
+</body>
+</html>
